@@ -43,6 +43,47 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
 // Global state of active jackpot matches
 let activeMatches = [...MOCK_JACKPOT_MATCHES];
 
+/**
+ * Helper function to query Gemini models with fallback across multiple models
+ * and graceful quota / rate-limit handling.
+ */
+async function callGeminiSafe(
+  aiClient: GoogleGenAI,
+  params: {
+    contents: any;
+    config?: any;
+    label?: string;
+  }
+): Promise<string | null> {
+  const modelsToTry = ["gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  for (const model of modelsToTry) {
+    try {
+      const response = await aiClient.models.generateContent({
+        model,
+        contents: params.contents,
+        config: params.config,
+      });
+      if (response.text) {
+        return response.text;
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      const isQuota =
+        msg.includes("429") ||
+        msg.includes("quota") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("limit");
+      if (isQuota) {
+        console.warn(`[Gemini API Info] Quota limit hit on ${model} for ${params.label || "task"}. Trying fallback...`);
+      } else {
+        console.warn(`[Gemini API Info] Error on ${model} for ${params.label || "task"}: ${msg.slice(0, 100)}`);
+      }
+    }
+  }
+  console.log(`[Gemini Fallback] Gemini API model quota limit reached for ${params.label || "task"}. Falling back to smart local engine.`);
+  return null;
+}
+
 /* --- API ENDPOINTS --- */
 
 // 1. Get the current jackpot matches
@@ -80,24 +121,23 @@ app.post("/api/matches/scrape", async (req, res) => {
   }
 
   if (ai) {
-    try {
-      console.log("Parsing jackpot fixtures via Gemini AI Scraper...");
-      let prompt = "";
+    console.log("Parsing jackpot fixtures via Gemini AI Scraper...");
+    let prompt = "";
 
-      if (rawPageHtml && rawPageHtml.length > 200) {
-        const cleanedHtml = rawPageHtml.substring(0, 80000); // limit payload size
-        prompt = `You are a sports data web scraper extracting current SportPesa Mega Jackpot Pro (17 matches) from the raw HTML content below of https://www.ke.sportpesa.com/en/mega-jackpot-pro.
+    if (rawPageHtml && rawPageHtml.length > 200) {
+      const cleanedHtml = rawPageHtml.substring(0, 80000); // limit payload size
+      prompt = `You are a sports data web scraper extracting current SportPesa Mega Jackpot Pro (17 matches) from the raw HTML content below of https://www.ke.sportpesa.com/en/mega-jackpot-pro.
 Extract all 17 matches (match numbers 1 through 17), home teams, away teams, kickoff times, 1X2 market odds, and leagues.
 
 RAW WEBPAGE HTML:
 ${cleanedHtml}`;
-      } else {
-        prompt = `You are a sports data scraping model for SportPesa Mega Jackpot Pro (17 matches).
+    } else {
+      prompt = `You are a sports data scraping model for SportPesa Mega Jackpot Pro (17 matches).
 Retrieve or provide the current active 17-game SportPesa Mega Jackpot coupon fixtures published on https://www.ke.sportpesa.com/en/mega-jackpot-pro for this week.
 Provide 17 matches (match_no "1" through "17") with kickoff times, home team, away team, odds for 1, X, 2, and league name.`;
-      }
+    }
 
-      prompt += `\n\nReturn strict valid JSON with key 'matches' containing an array of 17 match objects with keys:
+    prompt += `\n\nReturn strict valid JSON with key 'matches' containing an array of 17 match objects with keys:
 - match_no: string ("1" to "17")
 - kickoff: string (e.g. "Sat 16:00")
 - home: string
@@ -108,56 +148,57 @@ Provide 17 matches (match_no "1" through "17") with kickoff times, home team, aw
 - awayForm: string
 - predictionStats: object {"1": number, "X": number, "2": number}`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              matches: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    match_no: { type: Type.STRING },
-                    kickoff: { type: Type.STRING },
-                    home: { type: Type.STRING },
-                    away: { type: Type.STRING },
-                    odds: {
-                      type: Type.OBJECT,
-                      properties: {
-                        "1": { type: Type.NUMBER },
-                        "X": { type: Type.NUMBER },
-                        "2": { type: Type.NUMBER },
-                      },
-                      required: ["1", "X", "2"],
+    const text = await callGeminiSafe(ai, {
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            matches: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  match_no: { type: Type.STRING },
+                  kickoff: { type: Type.STRING },
+                  home: { type: Type.STRING },
+                  away: { type: Type.STRING },
+                  odds: {
+                    type: Type.OBJECT,
+                    properties: {
+                      "1": { type: Type.NUMBER },
+                      "X": { type: Type.NUMBER },
+                      "2": { type: Type.NUMBER },
                     },
-                    league: { type: Type.STRING },
-                    homeForm: { type: Type.STRING },
-                    awayForm: { type: Type.STRING },
-                    predictionStats: {
-                      type: Type.OBJECT,
-                      properties: {
-                        "1": { type: Type.NUMBER },
-                        "X": { type: Type.NUMBER },
-                        "2": { type: Type.NUMBER },
-                      },
-                      required: ["1", "X", "2"],
-                    },
+                    required: ["1", "X", "2"],
                   },
-                  required: ["match_no", "home", "away", "odds"],
+                  league: { type: Type.STRING },
+                  homeForm: { type: Type.STRING },
+                  awayForm: { type: Type.STRING },
+                  predictionStats: {
+                    type: Type.OBJECT,
+                    properties: {
+                      "1": { type: Type.NUMBER },
+                      "X": { type: Type.NUMBER },
+                      "2": { type: Type.NUMBER },
+                    },
+                    required: ["1", "X", "2"],
+                  },
                 },
+                required: ["match_no", "home", "away", "odds"],
               },
             },
-            required: ["matches"],
           },
+          required: ["matches"],
         },
-      });
+      },
+      label: "live webpage scraper",
+    });
 
-      if (response.text) {
-        const parsed = JSON.parse(response.text);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
         if (Array.isArray(parsed.matches) && parsed.matches.length >= 10) {
           const full17 = Array.from({ length: 17 }, (_, idx) => {
             const m = parsed.matches[idx] || MOCK_JACKPOT_MATCHES[idx];
@@ -199,9 +240,9 @@ Provide 17 matches (match_no "1" through "17") with kickoff times, home team, aw
             matches: activeMatches,
           });
         }
+      } catch (parseErr) {
+        console.warn("JSON parse error in scraper:", parseErr);
       }
-    } catch (err: any) {
-      console.warn("Gemini scraper AI failed or quota limited:", err?.message || err);
     }
   }
 
@@ -302,9 +343,8 @@ app.post("/api/matches/parse-text", async (req, res) => {
   }
 
   if (ai) {
-    try {
-      console.log("Parsing raw pasted SportPesa text via Gemini AI...");
-      const prompt = `You are a sports data parser. Below is text copied directly from SportPesa Mega Jackpot Pro page.
+    console.log("Parsing raw pasted SportPesa text via Gemini AI...");
+    const prompt = `You are a sports data parser. Below is text copied directly from SportPesa Mega Jackpot Pro page.
 Extract all 17 matches (match numbers 1 through 17), home team, away team, kickoff time, 1X2 market odds, and league.
 
 PASTED TEXT:
@@ -312,45 +352,46 @@ ${rawText.substring(0, 50000)}
 
 Return strict valid JSON with key 'matches' containing array of 17 match objects.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              matches: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    match_no: { type: Type.STRING },
-                    kickoff: { type: Type.STRING },
-                    home: { type: Type.STRING },
-                    away: { type: Type.STRING },
-                    odds: {
-                      type: Type.OBJECT,
-                      properties: {
-                        "1": { type: Type.NUMBER },
-                        "X": { type: Type.NUMBER },
-                        "2": { type: Type.NUMBER },
-                      },
-                      required: ["1", "X", "2"],
+    const text = await callGeminiSafe(ai, {
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            matches: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  match_no: { type: Type.STRING },
+                  kickoff: { type: Type.STRING },
+                  home: { type: Type.STRING },
+                  away: { type: Type.STRING },
+                  odds: {
+                    type: Type.OBJECT,
+                    properties: {
+                      "1": { type: Type.NUMBER },
+                      "X": { type: Type.NUMBER },
+                      "2": { type: Type.NUMBER },
                     },
-                    league: { type: Type.STRING },
+                    required: ["1", "X", "2"],
                   },
-                  required: ["match_no", "home", "away", "odds"],
+                  league: { type: Type.STRING },
                 },
+                required: ["match_no", "home", "away", "odds"],
               },
             },
-            required: ["matches"],
           },
+          required: ["matches"],
         },
-      });
+      },
+      label: "pasted text parser",
+    });
 
-      if (response.text) {
-        const parsed = JSON.parse(response.text);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
         if (Array.isArray(parsed.matches) && parsed.matches.length > 0) {
           const full17 = Array.from({ length: 17 }, (_, idx) => {
             const m = parsed.matches[idx] || MOCK_JACKPOT_MATCHES[idx];
@@ -385,9 +426,9 @@ Return strict valid JSON with key 'matches' containing array of 17 match objects
             matches: activeMatches,
           });
         }
+      } catch (err: any) {
+        console.warn("JSON parse error for pasted text response:", err);
       }
-    } catch (err: any) {
-      console.warn("Gemini text parser failed or quota limited:", err?.message || err);
     }
   }
 
@@ -435,9 +476,8 @@ app.post("/api/matches/ocr-scrape", async (req, res) => {
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   if (ai) {
-    try {
-      console.log("Analyzing uploaded jackpot screenshot via Gemini Vision Multimodal API...");
-      const prompt = `You are a sports-data OCR vision model extracting match information from a screenshot of a SportPesa Mega Jackpot or football coupon table.
+    console.log("Analyzing uploaded jackpot screenshot via Gemini Vision Multimodal API...");
+    const prompt = `You are a sports-data OCR vision model extracting match information from a screenshot of a SportPesa Mega Jackpot or football coupon table.
 Extract up to 17 football matches from this screenshot image.
 For each match extract:
 - match_no: "1", "2", ... "17"
@@ -449,58 +489,58 @@ For each match extract:
 
 Output strict valid JSON.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Data,
-                },
-              },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              extractedMatches: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    match_no: { type: Type.STRING },
-                    kickoff: { type: Type.STRING },
-                    home: { type: Type.STRING },
-                    away: { type: Type.STRING },
-                    odds: {
-                      type: Type.OBJECT,
-                      properties: {
-                        "1": { type: Type.NUMBER },
-                        "X": { type: Type.NUMBER },
-                        "2": { type: Type.NUMBER },
-                      },
-                      required: ["1", "X", "2"],
-                    },
-                    league: { type: Type.STRING },
-                  },
-                  required: ["match_no", "home", "away", "odds"],
-                },
+    const text = await callGeminiSafe(ai, {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
               },
             },
-            required: ["extractedMatches"],
-          },
+          ],
         },
-      });
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            extractedMatches: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  match_no: { type: Type.STRING },
+                  kickoff: { type: Type.STRING },
+                  home: { type: Type.STRING },
+                  away: { type: Type.STRING },
+                  odds: {
+                    type: Type.OBJECT,
+                    properties: {
+                      "1": { type: Type.NUMBER },
+                      "X": { type: Type.NUMBER },
+                      "2": { type: Type.NUMBER },
+                    },
+                    required: ["1", "X", "2"],
+                  },
+                  league: { type: Type.STRING },
+                },
+                required: ["match_no", "home", "away", "odds"],
+              },
+            },
+          },
+          required: ["extractedMatches"],
+        },
+      },
+      label: "screenshot OCR",
+    });
 
-      const text = response.text;
-      if (text) {
+    if (text) {
+      try {
         const parsed = JSON.parse(text);
         const extracted = parsed.extractedMatches || [];
 
@@ -541,9 +581,9 @@ Output strict valid JSON.`;
             matches: activeMatches,
           });
         }
+      } catch (err: any) {
+        console.warn("JSON parse error for screenshot vision response:", err);
       }
-    } catch (err: any) {
-      console.warn("Gemini screenshot OCR failed or quota limited:", err?.message || err);
     }
   }
 
@@ -733,8 +773,7 @@ app.post("/api/analyze-match", async (req, res) => {
 
   // B. Standard Gemini attempt
   if (ai) {
-    try {
-      const prompt = `Perform a comprehensive, sharp, analytical, and highly detailed betting analysis for the following football match:
+    const prompt = `Perform a comprehensive, sharp, analytical, and highly detailed betting analysis for the following football match:
 Match Number: ${match.match_no}
 League: ${match.league || "Unknown"}
 Fixture: ${match.home} vs ${match.away}
@@ -745,44 +784,36 @@ H2H Background: ${match.h2hText || "N/A"}
 
 Your analysis needs to evaluate both team forms, tactical strengths, defensive vulnerabilities, draw propensities, and suggest the most mathematically optimal predicted coupon outcome ('1' for Home win, 'X' for Draw, or '2' for Away win). Include tactical descriptions, confident ratings (High, Medium, or Low), and structured bullet points.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: "You are an elite, mathematical football forecaster and sports analyst specializing in Sportpesa jackpot predictions. You provide highly accurate, analytical, structured intelligence to bettors. Output your analysis in clean JSON strictly adhering to the specified schema format.",
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              matchNo: { type: Type.STRING },
-              tacticalOverview: { type: Type.STRING, description: "Detailed 2-3 sentence overview of how both teams play and match up tactically." },
-              confidence: { type: Type.STRING, description: "Must be 'High', 'Medium', or 'Low'" },
-              suggestedPick: { type: Type.STRING, description: "Must be either '1', 'X', or '2'" },
-              justification: { type: Type.STRING, description: "Sharp, data-driven reasoning why this pick is chosen, highlighting odds vs form." },
-              keyFactors: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "List of 3 key determinant factors (e.g., scoring trends, home strength, injury doubts)."
-              },
+    const text = await callGeminiSafe(ai, {
+      contents: prompt,
+      config: {
+        systemInstruction: "You are an elite, mathematical football forecaster and sports analyst specializing in Sportpesa jackpot predictions. You provide highly accurate, analytical, structured intelligence to bettors. Output your analysis in clean JSON strictly adhering to the specified schema format.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            matchNo: { type: Type.STRING },
+            tacticalOverview: { type: Type.STRING, description: "Detailed 2-3 sentence overview of how both teams play and match up tactically." },
+            confidence: { type: Type.STRING, description: "Must be 'High', 'Medium', or 'Low'" },
+            suggestedPick: { type: Type.STRING, description: "Must be either '1', 'X', or '2'" },
+            justification: { type: Type.STRING, description: "Sharp, data-driven reasoning why this pick is chosen, highlighting odds vs form." },
+            keyFactors: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "List of 3 key determinant factors (e.g., scoring trends, home strength, injury doubts)."
             },
-            required: ["matchNo", "tacticalOverview", "confidence", "suggestedPick", "justification", "keyFactors"],
           },
+          required: ["matchNo", "tacticalOverview", "confidence", "suggestedPick", "justification", "keyFactors"],
         },
-      });
+      },
+      label: "match analysis",
+    });
 
-      const text = response.text;
-      if (text) {
+    if (text) {
+      try {
         return res.json(JSON.parse(text));
-      } else {
-        throw new Error("Empty response from Gemini API");
-      }
-    } catch (error: any) {
-      const msg = error?.message || String(error);
-      const isQuotaExceeded = msg.includes("quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("429");
-      if (isQuotaExceeded) {
-        console.warn("[Gemini API Info] 429 Quota Exceeded for Match Analysis. Falling back to alternative AI standard routing.");
-      } else {
-        console.warn(`[Gemini API Info] Analysis fallback triggered: ${msg.slice(0, 150)}`);
+      } catch (err: any) {
+        console.warn("JSON parse error in match analysis:", err);
       }
     }
   }
@@ -801,21 +832,20 @@ app.post("/api/generate-slip", async (req, res) => {
   const { strategy } = req.body; // 'conservative' | 'ai-balanced' | 'bold'
   
   if (ai) {
-    try {
-      const matchDetails = activeMatches.map(m => ({
-        match_no: m.match_no,
-        home: m.home,
-        away: m.away,
-        odds: m.odds,
-        homeForm: m.homeForm,
-        awayForm: m.awayForm,
-      }));
+    const matchDetails = activeMatches.map(m => ({
+      match_no: m.match_no,
+      home: m.home,
+      away: m.away,
+      odds: m.odds,
+      homeForm: m.homeForm,
+      awayForm: m.awayForm,
+    }));
 
-      const strName = strategy === "conservative" ? "Conservative Odds Favorite" 
-                    : strategy === "bold" ? "Bold Upsets & High-Value Plays" 
-                    : "AI Balanced (Tactical Optimizations)";
+    const strName = strategy === "conservative" ? "Conservative Odds Favorite" 
+                  : strategy === "bold" ? "Bold Upsets & High-Value Plays" 
+                  : "AI Balanced (Tactical Optimizations)";
 
-      const prompt = `Analyze these 17 matches for the Sportpesa Mega Jackpot:
+    const prompt = `Analyze these 17 matches for the Sportpesa Mega Jackpot:
 ${JSON.stringify(matchDetails, null, 2)}
 
 Provide a fully filled bet-slip coupon outcome matching the selected strategy: "${strName}".
@@ -837,37 +867,31 @@ Format rules: Send only valid JSON in response matching:
   "justification": "Overall strategy motivation..."
 }`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: "You are a professional bet-slip builder specializing in multi-match football accumulator permutations. You provide highly logical, optimized bet slips based on user-requested betting strategies and return JSON outputs.",
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              selections: {
-                type: Type.OBJECT,
-                description: "Map of match_no (1-17) to array of selections (each contains '1', 'X' or '2'). Select up to 3 matches with two items (Double chances), others must have exactly 1 item.",
-              },
-              justification: { type: Type.STRING, description: "A paragraph justifying the general layout and choices in this strategy." }
+    const text = await callGeminiSafe(ai, {
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a professional bet-slip builder specializing in multi-match football accumulator permutations. You provide highly logical, optimized bet slips based on user-requested betting strategies and return JSON outputs.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            selections: {
+              type: Type.OBJECT,
+              description: "Map of match_no (1-17) to array of selections (each contains '1', 'X' or '2'). Select up to 3 matches with two items (Double chances), others must have exactly 1 item.",
             },
-            required: ["selections", "justification"]
-          }
-        },
-      });
+            justification: { type: Type.STRING, description: "A paragraph justifying the general layout and choices in this strategy." }
+          },
+          required: ["selections", "justification"]
+        }
+      },
+      label: "slip generation",
+    });
 
-      const text = response.text;
-      if (text) {
+    if (text) {
+      try {
         return res.json(JSON.parse(text));
-      }
-    } catch (e: any) {
-      const msg = e?.message || String(e);
-      const isQuotaExceeded = msg.includes("quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("429");
-      if (isQuotaExceeded) {
-        console.warn("[Gemini API Info] 429 Quota Exceeded for Generate Slip. Falling back to local strategy simulator.");
-      } else {
-        console.warn(`[Gemini API Info] Generate-slip fallback triggered: ${msg.slice(0, 150)}`);
+      } catch (err: any) {
+        console.warn("JSON parse error in generate-slip:", err);
       }
     }
   }

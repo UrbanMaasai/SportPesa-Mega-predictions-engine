@@ -11,7 +11,9 @@ import D3H2HGoalDiffChart, { getHistoricalH2HData } from "./components/D3H2HGoal
 import Header from "./components/Header";
 import ScreenshotUploadModal from "./components/ScreenshotUploadModal";
 import PasteTextModal from "./components/PasteTextModal";
+import OddsTrackerModal from "./components/OddsTrackerModal";
 import TeamLogo from "./components/TeamLogo";
+import FormSparkline from "./components/FormSparkline";
 import { TeamStrengthHeatmap } from "./components/TeamStrengthHeatmap";
 import { PayoutProbabilityEstimator } from "./components/PayoutProbabilityEstimator";
 import { getLeagueStats } from "./data/leagueData";
@@ -159,6 +161,10 @@ export default function App() {
   const [sortField, setSortField] = useState<"match_no" | "league" | "matchup" | "predictability" | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  // Odds Tracker Modal State
+  const [showOddsTrackerModal, setShowOddsTrackerModal] = useState<boolean>(false);
+  const [oddsTrackerMatchNo, setOddsTrackerMatchNo] = useState<string>("1");
+
   // Ingest pasting Custom list of matches
   const [customJsonInput, setCustomJsonInput] = useState<string>("");
   const [showJsonModal, setShowJsonModal] = useState<boolean>(false);
@@ -167,7 +173,7 @@ export default function App() {
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importText, setImportText] = useState<string>("");
-  const [exportModalFormat, setExportModalFormat] = useState<"json" | "csv">("json");
+  const [exportModalFormat, setExportModalFormat] = useState<"json" | "csv" | "telegram">("json");
   const [copiedTextFeedback, setCopiedTextFeedback] = useState<string | null>(null);
 
   // User notifications preference state (match_no -> boolean)
@@ -276,6 +282,19 @@ export default function App() {
   const handleMatchesScraped = (scrapedMatches: Match[], msg: string) => {
     setMatches(scrapedMatches);
     setJackpotSource("Screenshot OCR (Autosaved)");
+    setDatePreset("all");
+    setLeagueFilter("All");
+    setSmartFilter("all");
+    setSearchQuery("");
+
+    // Automatically activate all scraped matches in sub-jackpot active map
+    const newActiveMap: Record<string, boolean> = {};
+    scrapedMatches.forEach((m) => {
+      newActiveMap[m.match_no] = true;
+    });
+    setActiveSubJackpotMatches(newActiveMap);
+    setSubJackpotSize(scrapedMatches.length > 0 ? scrapedMatches.length : 17);
+
     const timestampStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     setLastScrapedScreenshotTime(timestampStr);
 
@@ -351,17 +370,18 @@ export default function App() {
     if (manuallyStarted[match.match_no]) return true;
     const mDate = parseMatchDate(match.kickoff);
     if (!mDate) return false;
-    // Older archived matches are always started/completed
-    if (mDate < new Date("2026-05-30T00:00:00")) return true;
+    // Older archived matches are always started/completed unless from screenshot
+    if (!jackpotSource.includes("Screenshot") && mDate < new Date("2026-05-30T00:00:00")) return true;
     return mDate <= simulatedTime;
   };
 
   // Helper to auto-select N matches based on AI predictability scores
   const optimizeSubJackpotSubsets = (size: number, currentMatches = matches) => {
-    // Current week matches of interest (excluding past archived games)
+    // Current week matches of interest (excluding past archived games unless screenshot)
     const currentJackpotMatches = currentMatches.filter((m) => {
+      if (jackpotSource.includes("Screenshot")) return true;
       const mDate = parseMatchDate(m.kickoff);
-      return mDate && mDate >= new Date("2026-05-30T00:00:00");
+      return !mDate || mDate >= new Date("2026-05-30T00:00:00");
     });
 
     const unstarted = currentJackpotMatches.filter((m) => !isMatchStarted(m));
@@ -421,16 +441,16 @@ export default function App() {
     const matchObj = matches.find((m) => m.match_no === matchNo);
     if (!matchObj) return false;
 
-    // Archived matches are NEVER active in any sub-jackpot slip
+    // Archived matches are NEVER active in any sub-jackpot slip unless from screenshot
     const mDate = parseMatchDate(matchObj.kickoff);
-    if (mDate && mDate < new Date("2026-05-30T00:00:00")) {
+    if (!jackpotSource.includes("Screenshot") && mDate && mDate < new Date("2026-05-30T00:00:00")) {
       return false;
     }
 
     // Handled size dependencies
     if (subJackpotSize >= 17) {
-      // For full mode, all current week matches are active
-      return mDate ? mDate >= new Date("2026-05-30T00:00:00") : false;
+      // For full mode, all current week or screenshot matches are active
+      return jackpotSource.includes("Screenshot") || !mDate || mDate >= new Date("2026-05-30T00:00:00");
     }
 
     const mapToUse = activeMapOverride || activeSubJackpotMatches;
@@ -634,8 +654,9 @@ export default function App() {
 
     // Count unarchived matches (current week's jackpot)
     const currentJackpotMatches = matches.filter((m) => {
+      if (jackpotSource.includes("Screenshot")) return true;
       const mDate = parseMatchDate(m.kickoff);
-      return mDate && mDate >= new Date("2026-05-30T00:00:00");
+      return !mDate || mDate >= new Date("2026-05-30T00:00:00");
     });
 
     if (currentJackpotMatches.length === 0) return;
@@ -1169,7 +1190,7 @@ export default function App() {
   };
 
   // Generate exporting schema data structure
-  const getExportData = (format: "json" | "csv") => {
+  const getExportData = (format: "json" | "csv" | "telegram") => {
     const exportRows = matches.map((m) => {
       const userPick = selections[m.match_no]?.join("+") || "NONE";
       return {
@@ -1205,6 +1226,10 @@ export default function App() {
       }, null, 2);
       fileType = "application/json";
       fileName = "sportpesa_mjp_current.json";
+    } else if (format === "telegram") {
+      dataStr = formatTelegramCouponMessage();
+      fileType = "text/plain";
+      fileName = "sportpesa_mjp_telegram_coupon.txt";
     } else {
       // Generate CSV string
       const headers = ["Match No", "Kickoff", "Home Team", "Away Team", "Odds 1", "Odds X", "Odds 2", "League", "My Pick", "Consensus Home", "Consensus Draw", "Consensus Away"];
@@ -1230,8 +1255,106 @@ export default function App() {
     return { dataStr, fileName, fileType };
   };
 
-  // Export current jackpot metadata and user selections (opens beautiful copy/download modal)
-  const handleExportData = (format: "json" | "csv") => {
+  // Format current active jackpot coupon into a Telegram-friendly message structure with emojis, bold text, and odds summary
+  const formatTelegramCouponMessage = (): string => {
+    const sortedMatches = [...matches]
+      .filter((m) => {
+        const num = parseInt(m.match_no);
+        return num >= 1 && num <= 17;
+      })
+      .sort((a, b) => parseInt(a.match_no) - parseInt(b.match_no));
+
+    const activeMatchesInCoupon = sortedMatches.filter((m) => isMatchActive(m.match_no));
+    const activeSelectionsCount = getActiveSelectionsCount();
+
+    let message = `⚽ *SPORTPESA MEGA JACKPOT PRO* ⚽\n`;
+    message += `🏆 *Coupon:* MJP${subJackpotSize} (${subJackpotSize} Fixtures)\n`;
+    message += `📊 *Strategy:* ${activeStrategy ? activeStrategy.toUpperCase() : "CUSTOM PICKS"}\n`;
+    message += `📱 *SMS Bet Code:* \`${getSportPesaSMSCode()}\` (Send to 79079)\n`;
+    message += `------------------------------------\n\n`;
+
+    let totalOddsSum = 0;
+    let pickedOddsCount = 0;
+
+    activeMatchesInCoupon.forEach((m) => {
+      const picks = selections[m.match_no] || [];
+      const isDouble = picks.length === 2;
+      const isTriple = picks.length === 3;
+
+      message += `📌 *Match #${m.match_no}*: ${m.home} vs ${m.away}\n`;
+      if (m.league) {
+        message += `   League: ${m.league} | Kickoff: ${m.kickoff || "TBD"}\n`;
+      }
+
+      if (picks.length === 0) {
+        message += `   Pick: ⚠️ *Unselected*\n\n`;
+      } else {
+        const pickDetails: string[] = [];
+        picks.forEach((p) => {
+          const oddVal = m.odds[p as "1" | "X" | "2"];
+          const outcomeLabel = p === "1" ? "Home" : p === "X" ? "Draw" : "Away";
+          if (typeof oddVal === "number") {
+            pickDetails.push(`${p} (${outcomeLabel} @ ${oddVal.toFixed(2)})`);
+            totalOddsSum += oddVal;
+            pickedOddsCount++;
+          } else {
+            pickDetails.push(`${p} (${outcomeLabel})`);
+          }
+        });
+
+        const pickTag = picks.join("");
+        const comboLabel = isTriple ? " [TRIPLE COVER]" : isDouble ? " [DOUBLE COVER]" : "";
+        message += `   Pick: *${pickTag}*${comboLabel} -> ${pickDetails.join(", ")}\n\n`;
+      }
+    });
+
+    const avgOdds = pickedOddsCount > 0 ? totalOddsSum / pickedOddsCount : 0;
+
+    message += `------------------------------------\n`;
+    message += `💰 *COUPON ODDS & FINANCIAL SUMMARY*\n`;
+    message += `🎯 *Picked Legs:* ${activeSelectionsCount} / ${subJackpotSize} active games\n`;
+    message += `🎟️ *Permutations:* ${totalCombinations} line(s)\n`;
+    message += `💵 *Total Ticket Price:* Ksh ${estimatedCost.toLocaleString()}\n`;
+    if (avgOdds > 0) {
+      message += `📈 *Average Selected Leg Odds:* ${avgOdds.toFixed(2)}\n`;
+    }
+    message += `🔥 *Estimated Jackpot Pool:* Ksh 389,000,000+\n`;
+    message += `------------------------------------\n`;
+    message += `⚡ *Quick Place via SMS:* Send \`${getSportPesaSMSCode()}\` to *79079*\n`;
+    message += `🤖 _Generated with SportPesa MJP AI Predictor_`;
+
+    return message;
+  };
+
+  // Open Telegram app with pre-filled message via tg:// link
+  const openTelegramWithCoupon = () => {
+    const formattedText = formatTelegramCouponMessage();
+    const encodedText = encodeURIComponent(formattedText);
+
+    // tg:// msg_url link to open native Telegram app directly with pre-filled message
+    const tgProtocolUrl = `tg://msg_url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`;
+    const tgWebUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`;
+
+    addLog(`Formatting selected coupon into Telegram message structure & launching Telegram via tg:// link...`);
+    showToast("Opening Telegram app with pre-filled coupon message!", "success");
+
+    // Copy to clipboard as a helpful fallback for the user
+    copyToClipboard(formattedText, "Telegram Coupon Message");
+
+    try {
+      window.location.href = tgProtocolUrl;
+
+      // Fallback timer if native app doesn't open
+      setTimeout(() => {
+        window.open(tgWebUrl, "_blank", "noopener,noreferrer");
+      }, 1200);
+    } catch (err) {
+      window.open(tgWebUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  // Export current jackpot metadata and user selections (opens copy/download/telegram modal)
+  const handleExportData = (format: "json" | "csv" | "telegram") => {
     if (matches.length === 0) return;
     setExportModalFormat(format);
     setShowExportModal(true);
@@ -1239,7 +1362,7 @@ export default function App() {
   };
 
   // Triggers immediate file download from within the modal
-  const triggerDownload = (format: "json" | "csv") => {
+  const triggerDownload = (format: "json" | "csv" | "telegram") => {
     const { dataStr, fileName, fileType } = getExportData(format);
     const blob = new Blob([dataStr], { type: fileType });
     const url = URL.createObjectURL(blob);
@@ -1249,7 +1372,7 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    addLog(`Downgrade export disk download complete: '${fileName}'.`);
+    addLog(`Export disk download complete: '${fileName}'.`);
     showToast(`File download complete: ${fileName} exported successfully!`, "success");
   };
 
@@ -1656,7 +1779,9 @@ export default function App() {
 
     let passesDate = true;
 
-    if (datePreset === "current-week") {
+    if (jackpotSource.includes("Screenshot") || datePreset === "all") {
+      passesDate = true;
+    } else if (datePreset === "current-week") {
       // Current week is defined as May 30, 2026 and May 31, 2026
       const start = new Date("2026-05-30T00:00:00");
       const end = new Date("2026-05-31T23:59:59");
@@ -2088,6 +2213,10 @@ export default function App() {
           matchCount={matches.length}
           onOpenScreenshotModal={() => setShowScreenshotModal(true)}
           onOpenPasteModal={() => setShowPasteModal(true)}
+          onOpenOddsTracker={() => {
+            setOddsTrackerMatchNo("1");
+            setShowOddsTrackerModal(true);
+          }}
         />
       </div>
 
@@ -2526,6 +2655,16 @@ export default function App() {
                           <Copy className="w-3.5 h-3.5" />
                         )}
                         <span>{copiedTextFeedback === "SportPesa SMS betting code" ? "Copied" : "Copy"}</span>
+                      </button>
+
+                      <button
+                        onClick={openTelegramWithCoupon}
+                        id="telegram-share-btn"
+                        className="px-3 py-1.5 text-xs font-extrabold transition-all rounded-lg cursor-pointer shrink-0 flex items-center gap-1.5 bg-[#229ED9] hover:bg-[#1c8ec4] text-white shadow-xs hover:shadow-sm"
+                        title="Format coupon into Telegram structure (emojis, bold, odds summary) and launch Telegram via tg:// link"
+                      >
+                        <Send className="w-3.5 h-3.5 fill-current text-white" />
+                        <span>Share Telegram</span>
                       </button>
                     </div>
 
@@ -3104,6 +3243,15 @@ export default function App() {
                                       </span>
                                     ))}
                                   </div>
+                                  {m.homeForm && (
+                                    <FormSparkline
+                                      formString={m.homeForm}
+                                      teamName={m.home}
+                                      strokeColor="#10b981"
+                                      width={60}
+                                      height={18}
+                                    />
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-3 mt-1">
@@ -3134,6 +3282,15 @@ export default function App() {
                                       </span>
                                     ))}
                                   </div>
+                                  {m.awayForm && (
+                                    <FormSparkline
+                                      formString={m.awayForm}
+                                      teamName={m.away}
+                                      strokeColor="#6366f1"
+                                      width={60}
+                                      height={18}
+                                    />
+                                  )}
                                 </div>
 
                                 <AnimatePresence initial={false}>
@@ -5112,7 +5269,7 @@ export default function App() {
               {/* Export Mode Toggle */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Export Data Format</span>
-                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg">
+                <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
                   <button
                     onClick={() => setExportModalFormat("json")}
                     className={`py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
@@ -5133,8 +5290,55 @@ export default function App() {
                   >
                     CSV Spreadsheet
                   </button>
+                  <button
+                    onClick={() => setExportModalFormat("telegram")}
+                    className={`py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      exportModalFormat === "telegram"
+                        ? "bg-[#229ED9] text-white shadow-sm"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Send className="w-3 h-3 fill-current text-white" />
+                    <span>Telegram (tg://)</span>
+                  </button>
                 </div>
               </div>
+
+              {/* Dedicated Telegram Instant Launch Panel */}
+              {exportModalFormat === "telegram" && (
+                <div className="bg-[#229ED9]/10 p-4 rounded-xl border border-[#229ED9]/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-[#1d8bbd] uppercase tracking-wide flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5 fill-current text-[#229ED9]" />
+                      Telegram App Launcher (tg:// protocol)
+                    </h4>
+                    <span className="text-[9px] bg-[#229ED9] text-white font-black px-2 py-0.5 rounded-full uppercase">
+                      Instant Pre-fill
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    This formats your selected coupon with emojis, match legs, selected outcome odds, total price, and SMS code, then opens your installed Telegram app directly via a <code className="font-mono bg-white px-1 rounded text-[#1d8bbd] font-bold">tg://</code> link.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={openTelegramWithCoupon}
+                      className="px-4 py-2 bg-[#229ED9] hover:bg-[#1c8ec4] text-white font-extrabold text-xs rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5 fill-current" />
+                      Open Telegram App Now (tg://)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(formatTelegramCouponMessage(), "Telegram Message")}
+                      className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      Copy Telegram Text
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Ready-To-Paste Selections Box for Sportsbooks (Requested Feature!) */}
               <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/60 space-y-3">
@@ -5218,7 +5422,7 @@ export default function App() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-                    Raw File Payload Code Preview
+                    {exportModalFormat === "telegram" ? "Formatted Telegram Message Preview" : "Raw File Payload Code Preview"}
                   </span>
                   <button
                     onClick={() => copyToClipboard(getExportData(exportModalFormat).dataStr, "RAW")}
@@ -5227,12 +5431,12 @@ export default function App() {
                     {copiedTextFeedback === "RAW" ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Copied Raw Data!</span>
+                        <span>Copied Text!</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Raw Output payload</span>
+                        <span>Copy Output Payload</span>
                       </>
                     )}
                   </button>
@@ -5260,17 +5464,28 @@ export default function App() {
                 >
                   Close
                 </button>
-                <button
-                  type="button"
-                  onClick={() => triggerDownload(exportModalFormat)}
-                  className={`px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer ${
-                    exportModalFormat === "json"
-                      ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
-                      : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
-                  }`}
-                >
-                  Download .{exportModalFormat} file
-                </button>
+                {exportModalFormat === "telegram" ? (
+                  <button
+                    type="button"
+                    onClick={openTelegramWithCoupon}
+                    className="px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer bg-[#229ED9] hover:bg-[#1c8ec4] flex items-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5 fill-current" />
+                    Launch Telegram (tg://)
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => triggerDownload(exportModalFormat)}
+                    className={`px-4 py-2 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer ${
+                      exportModalFormat === "json"
+                        ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
+                        : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
+                    }`}
+                  >
+                    Download .{exportModalFormat} file
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -5987,17 +6202,32 @@ export default function App() {
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSummaryDrawer(false);
-                      handleExportData("json");
-                    }}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    Export & Share
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSummaryDrawer(false);
+                        openTelegramWithCoupon();
+                      }}
+                      className="px-3 py-1.5 bg-[#229ED9] hover:bg-[#1c8ec4] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      title="Format coupon and open pre-filled message in Telegram app via tg:// link"
+                    >
+                      <Send className="w-3.5 h-3.5 fill-current" />
+                      <span>Telegram</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSummaryDrawer(false);
+                        handleExportData("json");
+                      }}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Export & Share
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -6090,6 +6320,13 @@ export default function App() {
         isOpen={showPasteModal}
         onClose={() => setShowPasteModal(false)}
         onMatchesParsed={handleMatchesParsed}
+      />
+
+      <OddsTrackerModal
+        isOpen={showOddsTrackerModal}
+        onClose={() => setShowOddsTrackerModal(false)}
+        matches={matches}
+        initialMatchNo={oddsTrackerMatchNo}
       />
     </div>
   );

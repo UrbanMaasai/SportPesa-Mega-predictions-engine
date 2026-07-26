@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { Trophy, RefreshCw, Layers, DollarSign, Calendar, TrendingUp, Image, Camera, UploadCloud, FileText } from "lucide-react";
+import { Trophy, RefreshCw, Layers, DollarSign, Calendar, TrendingUp, Image, Camera, UploadCloud, FileText, LineChart } from "lucide-react";
 
 interface HeaderProps {
   onSync: () => Promise<void>;
@@ -12,9 +12,10 @@ interface HeaderProps {
   matchCount: number;
   onOpenScreenshotModal?: () => void;
   onOpenPasteModal?: () => void;
+  onOpenOddsTracker?: () => void;
 }
 
-export default function Header({ onSync, isSyncing, matchCount, onOpenScreenshotModal, onOpenPasteModal }: HeaderProps) {
+export default function Header({ onSync, isSyncing, matchCount, onOpenScreenshotModal, onOpenPasteModal, onOpenOddsTracker }: HeaderProps) {
   const [lastSyncTime, setLastSyncTime] = useState<string>("Today, 10:09 AM");
 
   const handleSyncClick = async () => {
@@ -74,6 +75,21 @@ export default function Header({ onSync, isSyncing, matchCount, onOpenScreenshot
               <div className="font-mono text-left text-xs text-white font-black">{isSyncing ? "Scraping Live..." : lastSyncTime}</div>
             </div>
           </button>
+
+          {onOpenOddsTracker && (
+            <button
+              onClick={onOpenOddsTracker}
+              id="odds-tracker-btn"
+              className="flex items-center gap-2.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-100 px-3.5 py-3 rounded-xl text-sm font-bold border border-indigo-500/40 shadow-lg transition-all duration-200 cursor-pointer"
+              title="Track odds shifts across time from publication date to kickoff"
+            >
+              <LineChart className="w-4 h-4 text-emerald-400" />
+              <div>
+                <div className="text-[10px] text-indigo-200 font-semibold uppercase tracking-wider text-left">Odds Tracker</div>
+                <div className="font-mono text-left text-xs text-emerald-300 font-black">Market Flow 📈</div>
+              </div>
+            </button>
+          )}
 
           {onOpenPasteModal && (
             <button

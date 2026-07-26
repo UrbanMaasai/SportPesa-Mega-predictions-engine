@@ -5,9 +5,10 @@
 
 import React from "react";
 import { Match } from "../types";
-import { Sparkles, BrainCircuit, BarChart3, HelpCircle, ArrowRight } from "lucide-react";
+import { Sparkles, BrainCircuit, BarChart3, HelpCircle, ArrowRight, LineChart } from "lucide-react";
 import { get24hDrop } from "./D3LineChart";
 import TeamNameH2HCard from "./TeamNameH2HCard";
+import FormSparkline from "./FormSparkline";
 
 interface JackpotTableProps {
   matches: Match[];
@@ -15,6 +16,7 @@ interface JackpotTableProps {
   selections: Record<string, string[]>;
   onAnalyzeMatch: (match: Match) => void;
   activeAnalysisMatchNo: string | null;
+  onOpenOddsTracker?: (matchNo?: string) => void;
 }
 
 export default function JackpotTable({
@@ -23,6 +25,7 @@ export default function JackpotTable({
   selections,
   onAnalyzeMatch,
   activeAnalysisMatchNo,
+  onOpenOddsTracker,
 }: JackpotTableProps) {
   const getOutcomeClass = (matchNo: string, outcome: string, isSharp: boolean) => {
     const isSelected = selections[matchNo]?.includes(outcome);
@@ -158,6 +161,15 @@ export default function JackpotTable({
                             </span>
                           )}
                           {match.homeForm && renderFormBadge(match.homeForm)}
+                          {match.homeForm && (
+                            <FormSparkline
+                              formString={match.homeForm}
+                              teamName={match.home}
+                              strokeColor="#10b981"
+                              width={64}
+                              height={18}
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -177,6 +189,15 @@ export default function JackpotTable({
                             </span>
                           )}
                           {match.awayForm && renderFormBadge(match.awayForm)}
+                          {match.awayForm && (
+                            <FormSparkline
+                              formString={match.awayForm}
+                              teamName={match.away}
+                              strokeColor="#6366f1"
+                              width={64}
+                              height={18}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -340,20 +361,34 @@ export default function JackpotTable({
                     </div>
                   </td>
 
-                  {/* AI Analysis trigger */}
+                  {/* AI Analysis trigger & Odds Tracker */}
                   <td className="py-5 px-4 text-center">
-                    <button
-                      onClick={() => onAnalyzeMatch(match)}
-                      id={`analyze-btn-${match.match_no}`}
-                      className={`inline-flex items-center gap-1 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 shadow-sm border ${
-                        isAnalyzing
-                          ? "bg-slate-900 border-slate-900 text-white font-black"
-                          : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 border-emerald-200/50"
-                      }`}
-                    >
-                      <Sparkles className={`w-3.5 h-3.5 ${isAnalyzing ? "text-amber-400 animate-pulse" : "text-emerald-600"}`} />
-                      {isAnalyzing ? "Viewing" : "AI Intel"}
-                    </button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => onAnalyzeMatch(match)}
+                        id={`analyze-btn-${match.match_no}`}
+                        className={`inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 shadow-xs border cursor-pointer ${
+                          isAnalyzing
+                            ? "bg-slate-900 border-slate-900 text-white font-black"
+                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 border-emerald-200/50"
+                        }`}
+                      >
+                        <Sparkles className={`w-3.5 h-3.5 ${isAnalyzing ? "text-amber-400 animate-pulse" : "text-emerald-600"}`} />
+                        {isAnalyzing ? "Viewing" : "AI Intel"}
+                      </button>
+
+                      {onOpenOddsTracker && (
+                        <button
+                          onClick={() => onOpenOddsTracker(match.match_no)}
+                          id={`odds-track-btn-${match.match_no}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/60 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                          title={`Track publication to kickoff odds movement for Match #${match.match_no}`}
+                        >
+                          <LineChart className="w-3.5 h-3.5 text-indigo-600" />
+                          <span className="hidden xl:inline">Odds Flow</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
