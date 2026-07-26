@@ -125,14 +125,51 @@ export default function Header({ onSync, isSyncing, matchCount, onOpenScreenshot
 
       {/* Stats Widgets Bento Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-700/50">
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-705/30 backdrop-blur-sm">
+        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-705/30 backdrop-blur-sm relative group">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Current Grand Pool
           </div>
           <div className="text-xl md:text-2xl font-black text-amber-400 font-mono">
-            Ksh 365,410,000
+            Ksh 279,942,787
           </div>
-          <div className="text-[10px] text-slate-400">Guaranteed Progressive Payout</div>
+          <div className="text-[10px] text-slate-300 font-medium flex items-center justify-between mt-0.5">
+            <span>MJP 17: Ksh 129,484,043</span>
+            <span className="text-emerald-400 font-bold">13–16 Incl.</span>
+          </div>
+
+          {/* Detailed Sub-Jackpots Breakdown Tooltip on hover */}
+          <div className="hidden group-hover:block absolute top-full left-0 mt-2 z-30 w-72 bg-slate-950 border border-slate-700 p-3.5 rounded-xl shadow-2xl backdrop-blur-md">
+            <div className="text-xs font-bold text-amber-400 border-b border-slate-800 pb-1.5 mb-2 flex items-center justify-between">
+              <span>Mega Jackpot Pool Breakdown</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">Live</span>
+            </div>
+            <div className="space-y-1.5 text-xs font-mono">
+              <div className="flex justify-between items-center text-slate-200">
+                <span className="font-semibold text-amber-300">MJP 17 (Full):</span>
+                <span className="font-bold text-white">Ksh 129,484,043</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-300">
+                <span>MJP 16 (16 Games):</span>
+                <span>Ksh 70,229,013</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-300">
+                <span>MJP 15 (15 Games):</span>
+                <span>Ksh 40,114,865</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-300">
+                <span>MJP 14 (14 Games):</span>
+                <span>Ksh 25,071,791</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-300">
+                <span>MJP 13 (13 Games):</span>
+                <span>Ksh 15,043,075</span>
+              </div>
+              <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-emerald-400 font-bold">
+                <span>Combined Grand Total:</span>
+                <span>Ksh 279,942,787</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-705/30 backdrop-blur-sm">

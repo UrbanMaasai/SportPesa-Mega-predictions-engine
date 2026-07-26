@@ -125,34 +125,34 @@ export const PayoutProbabilityEstimator: React.FC<PayoutProbabilityEstimatorProp
     let label = "Bonus Tier Unavailable";
     
     if (subJackpotSize === 17) {
-      if (targetCorrect === 17) { baseReturn = 351452190; label = "Grand Jackpot Winner 🎉"; }
+      if (targetCorrect === 17) { baseReturn = 129484043; label = "Grand Jackpot Winner 🎉"; }
       else if (targetCorrect === 16) { baseReturn = 2120440; label = "First Tier Bonus (16/17)"; }
       else if (targetCorrect === 15) { baseReturn = 340500; label = "Second Tier Bonus (15/17)"; }
       else if (targetCorrect === 14) { baseReturn = 41200; label = "Third Tier Bonus (14/17)"; }
       else if (targetCorrect === 13) { baseReturn = 3110; label = "Fourth Tier Bonus (13/17)"; }
       else if (targetCorrect === 12) { baseReturn = 640; label = "Fifth Tier Bonus (12/17)"; }
     } else if (subJackpotSize === 16) {
-      if (targetCorrect === 16) { baseReturn = 25000000; label = "Grand MJP 16 Pool 🎉"; }
+      if (targetCorrect === 16) { baseReturn = 70229013; label = "Grand MJP 16 Pool 🎉"; }
       else if (targetCorrect === 15) { baseReturn = 450000; label = "Bonus Tier 1 (15/16)"; }
       else if (targetCorrect === 14) { baseReturn = 62000; label = "Bonus Tier 2 (14/16)"; }
       else if (targetCorrect === 13) { baseReturn = 8400; label = "Bonus Tier 3 (13/16)"; }
       else if (targetCorrect === 12) { baseReturn = 1200; label = "Bonus Tier 4 (12/16)"; }
       else if (targetCorrect === 11) { baseReturn = 350; label = "Bonus Tier 5 (11/16)"; }
     } else if (subJackpotSize === 15) {
-      if (targetCorrect === 15) { baseReturn = 15000000; label = "Grand MJP 15 Pool 🎉"; }
+      if (targetCorrect === 15) { baseReturn = 40114865; label = "Grand MJP 15 Pool 🎉"; }
       else if (targetCorrect === 14) { baseReturn = 280000; label = "Bonus Tier 1 (14/15)"; }
       else if (targetCorrect === 13) { baseReturn = 44000; label = "Bonus Tier 2 (13/15)"; }
       else if (targetCorrect === 12) { baseReturn = 5500; label = "Bonus Tier 3 (12/15)"; }
       else if (targetCorrect === 11) { baseReturn = 1100; label = "Bonus Tier 4 (11/15)"; }
       else if (targetCorrect === 10) { baseReturn = 240; label = "Bonus Tier 5 (10/15)"; }
     } else if (subJackpotSize === 14) {
-      if (targetCorrect === 14) { baseReturn = 10000000; label = "Grand MJP 14 Pool 🎉"; }
+      if (targetCorrect === 14) { baseReturn = 25071791; label = "Grand MJP 14 Pool 🎉"; }
       else if (targetCorrect === 13) { baseReturn = 190000; label = "Bonus Tier 1 (13/14)"; }
       else if (targetCorrect === 12) { baseReturn = 38000; label = "Bonus Tier 2 (12/14)"; }
       else if (targetCorrect === 11) { baseReturn = 4900; label = "Bonus Tier 3 (11/14)"; }
       else if (targetCorrect === 10) { baseReturn = 950; label = "Bonus Tier 4 (10/14)"; }
     } else { // 13
-      if (targetCorrect === 13) { baseReturn = 5000000; label = "Grand MJP 13 Pool 🎉"; }
+      if (targetCorrect === 13) { baseReturn = 15043075; label = "Grand MJP 13 Pool 🎉"; }
       else if (targetCorrect === 12) { baseReturn = 110000; label = "Bonus Tier 1 (12/13)"; }
       else if (targetCorrect === 11) { baseReturn = 25000; label = "Bonus Tier 2 (11/13)"; }
       else if (targetCorrect === 10) { baseReturn = 3900; label = "Bonus Tier 3 (10/13)"; }
@@ -362,34 +362,34 @@ export const PayoutProbabilityEstimator: React.FC<PayoutProbabilityEstimatorProp
                 // Get typical label payouts
                 let payLabel = "";
                 if (subJackpotSize === 17) {
-                  if (matchesCount === 17) payLabel = "Ksh 351M Grand";
+                  if (matchesCount === 17) payLabel = "Ksh 129.5M Grand";
                   else if (matchesCount === 16) payLabel = "Ksh 2.1M";
                   else if (matchesCount === 15) payLabel = "Ksh 340k";
                   else if (matchesCount === 14) payLabel = "Ksh 41k";
                   else if (matchesCount === 13) payLabel = "Ksh 3,110";
                   else if (matchesCount === 12) payLabel = "Ksh 640";
                 } else if (subJackpotSize === 16) {
-                  if (matchesCount === 16) payLabel = "Ksh 25M Grand";
+                  if (matchesCount === 16) payLabel = "Ksh 70.2M Grand";
                   else if (matchesCount === 15) payLabel = "Ksh 450k";
                   else if (matchesCount === 14) payLabel = "Ksh 62k";
                   else if (matchesCount === 13) payLabel = "Ksh 8,400";
                   else if (matchesCount === 12) payLabel = "Ksh 1,200";
                   else if (matchesCount === 11) payLabel = "Ksh 350";
                 } else if (subJackpotSize === 15) {
-                  if (matchesCount === 15) payLabel = "Ksh 15M Grand";
+                  if (matchesCount === 15) payLabel = "Ksh 40.1M Grand";
                   else if (matchesCount === 14) payLabel = "Ksh 280k";
                   else if (matchesCount === 13) payLabel = "Ksh 44k";
                   else if (matchesCount === 12) payLabel = "Ksh 5.5k";
                   else if (matchesCount === 11) payLabel = "Ksh 1,100";
                   else if (matchesCount === 10) payLabel = "Ksh 240";
                 } else if (subJackpotSize === 14) {
-                  if (matchesCount === 14) payLabel = "Ksh 10M Grand";
+                  if (matchesCount === 14) payLabel = "Ksh 25.1M Grand";
                   else if (matchesCount === 13) payLabel = "Ksh 190k";
                   else if (matchesCount === 12) payLabel = "Ksh 38k";
                   else if (matchesCount === 11) payLabel = "Ksh 4,900";
                   else if (matchesCount === 10) payLabel = "Ksh 950";
                 } else { // 13
-                  if (matchesCount === 13) payLabel = "Ksh 5M Grand";
+                  if (matchesCount === 13) payLabel = "Ksh 15.0M Grand";
                   else if (matchesCount === 12) payLabel = "Ksh 110k";
                   else if (matchesCount === 11) payLabel = "Ksh 25k";
                   else if (matchesCount === 10) payLabel = "Ksh 3,900";

@@ -389,7 +389,7 @@ export default function App() {
     const mDate = parseMatchDate(match.kickoff);
     if (!mDate) return false;
     // Older archived matches are always started/completed unless from screenshot
-    if (!jackpotSource.includes("Screenshot") && mDate < new Date("2026-05-30T00:00:00")) return true;
+    if (!jackpotSource.includes("Screenshot") && mDate < new Date("2026-07-25T00:00:00")) return true;
     return mDate <= simulatedTime;
   };
 
@@ -399,7 +399,7 @@ export default function App() {
     const currentJackpotMatches = currentMatches.filter((m) => {
       if (jackpotSource.includes("Screenshot")) return true;
       const mDate = parseMatchDate(m.kickoff);
-      return !mDate || mDate >= new Date("2026-05-30T00:00:00");
+      return !mDate || mDate >= new Date("2026-07-25T00:00:00");
     });
 
     const unstarted = currentJackpotMatches.filter((m) => !isMatchStarted(m));
@@ -461,14 +461,14 @@ export default function App() {
 
     // Archived matches are NEVER active in any sub-jackpot slip unless from screenshot
     const mDate = parseMatchDate(matchObj.kickoff);
-    if (!jackpotSource.includes("Screenshot") && mDate && mDate < new Date("2026-05-30T00:00:00")) {
+    if (!jackpotSource.includes("Screenshot") && mDate && mDate < new Date("2026-07-25T00:00:00")) {
       return false;
     }
 
     // Handled size dependencies
     if (subJackpotSize >= 17) {
       // For full mode, all current week or screenshot matches are active
-      return jackpotSource.includes("Screenshot") || !mDate || mDate >= new Date("2026-05-30T00:00:00");
+      return jackpotSource.includes("Screenshot") || !mDate || mDate >= new Date("2026-07-25T00:00:00");
     }
 
     const mapToUse = activeMapOverride || activeSubJackpotMatches;
@@ -674,7 +674,7 @@ export default function App() {
     const currentJackpotMatches = matches.filter((m) => {
       if (jackpotSource.includes("Screenshot")) return true;
       const mDate = parseMatchDate(m.kickoff);
-      return !mDate || mDate >= new Date("2026-05-30T00:00:00");
+      return !mDate || mDate >= new Date("2026-07-25T00:00:00");
     });
 
     if (currentJackpotMatches.length === 0) return;
@@ -926,10 +926,15 @@ export default function App() {
       if (autosavedScreenshot) {
         const parsedScreenshot = JSON.parse(autosavedScreenshot);
         if (Array.isArray(parsedScreenshot.matches) && parsedScreenshot.matches.length === 17) {
-          setMatches(parsedScreenshot.matches);
-          setJackpotSource("Screenshot OCR (Autosaved)");
-          if (parsedScreenshot.timeStr) setLastScrapedScreenshotTime(parsedScreenshot.timeStr);
-          addLog("[Autosave] Loaded autosaved screenshot jackpot dataset (17 games).");
+          const isObsolete = parsedScreenshot.matches.some((m: any) => m.kickoff && (m.kickoff.includes("05/26") || m.kickoff.includes("May")));
+          if (!isObsolete) {
+            setMatches(parsedScreenshot.matches);
+            setJackpotSource("Screenshot OCR (Autosaved)");
+            if (parsedScreenshot.timeStr) setLastScrapedScreenshotTime(parsedScreenshot.timeStr);
+            addLog("[Autosave] Loaded autosaved screenshot jackpot dataset (17 games).");
+          } else {
+            localStorage.removeItem("mjp_autosaved_screenshot_jackpot");
+          }
         }
       }
     } catch (e) {
@@ -990,6 +995,8 @@ export default function App() {
       const data = await res.json();
       if (Array.isArray(data.matches) && data.matches.length > 0) {
         setMatches(data.matches);
+        setJackpotSource("Live SportPesa Portal");
+        localStorage.removeItem("mjp_autosaved_screenshot_jackpot");
         
         addLog("Successfully extracted current SportPesa MJP live 17-leg coupon!");
         addLog("Update complete. 17 matches synchronized with live bookie prices.");
@@ -1336,7 +1343,7 @@ export default function App() {
     if (avgOdds > 0) {
       message += `📈 *Average Selected Leg Odds:* ${avgOdds.toFixed(2)}\n`;
     }
-    message += `🔥 *Estimated Jackpot Pool:* Ksh 389,000,000+\n`;
+    message += `🔥 *Estimated Combined Jackpot Pool:* Ksh 279,942,787+\n`;
     message += `------------------------------------\n`;
     message += `⚡ *Quick Place via SMS:* Send \`${getSportPesaSMSCode()}\` to *79079*\n`;
     message += `🤖 _Generated with SportPesa MJP AI Predictor_`;
@@ -2302,10 +2309,10 @@ export default function App() {
                 <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> Estimated Pool Payout
               </p>
               <p className="text-xl md:text-2xl font-black text-slate-900 font-mono text-emerald-800">
-                Ksh 354.2M
+                {subJackpotSize === 17 ? "Ksh 129.5M" : subJackpotSize === 16 ? "Ksh 70.2M" : subJackpotSize === 15 ? "Ksh 40.1M" : subJackpotSize === 14 ? "Ksh 25.1M" : "Ksh 15.0M"}
               </p>
             </div>
-            <span className="text-[11px] text-slate-400">Guaranteed Progressive Grand Prize</span>
+            <span className="text-[11px] text-slate-500">MJP {subJackpotSize} Prize (Ksh 279.9M Combined Total)</span>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
@@ -2520,17 +2527,26 @@ export default function App() {
                     Target SportPesa Jackpot Pool Category
                   </span>
                   <div className="grid grid-cols-5 gap-1.5 bg-slate-100/95 p-1 rounded-lg">
-                    {[17, 16, 15, 14, 13].map((size) => (
+                    {[
+                      { size: 17, amt: "Ksh 129.5M" },
+                      { size: 16, amt: "Ksh 70.2M" },
+                      { size: 15, amt: "Ksh 40.1M" },
+                      { size: 14, amt: "Ksh 25.1M" },
+                      { size: 13, amt: "Ksh 15.0M" }
+                    ].map(({ size, amt }) => (
                       <button
                         key={size}
                         onClick={() => handleSubJackpotSizeChange(size)}
-                        className={`py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        className={`py-1.5 px-1 rounded-md text-xs font-bold transition-all cursor-pointer flex flex-col items-center ${
                           subJackpotSize === size
                             ? "bg-indigo-600 text-white shadow-2xs font-extrabold"
                             : "text-slate-600 hover:text-indigo-600 hover:bg-slate-200"
                         }`}
                       >
-                        {size === 17 ? "MJP 17" : `MJP ${size}`}
+                        <span>{size === 17 ? "MJP 17" : `MJP ${size}`}</span>
+                        <span className={`text-[9px] font-mono ${subJackpotSize === size ? "text-indigo-100" : "text-slate-400"}`}>
+                          {amt}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -2850,11 +2866,12 @@ export default function App() {
 
                   <div className="flex flex-wrap gap-1 mt-1">
                     {[
-                      { label: "Pre-Match", time: "2026-05-30T14:00:00", desc: "All 17 live" },
-                      { label: "Sat 19:30", time: "2026-05-30T19:30:00", desc: "1 Started" },
-                      { label: "Sat 23:50", time: "2026-05-30T23:50:00", desc: "4 Started" },
-                      { label: "Sun 15:30", time: "2026-05-31T15:30:00", desc: "7 Started" },
-                      { label: "Sun 19:45", time: "2026-05-31T19:45:00", desc: "13 Started" }
+                      { label: "Pre-Match", time: "2026-07-26T12:00:00", desc: "All 17 live" },
+                      { label: "Sun 17:45", time: "2026-07-26T17:45:00", desc: "1 Started" },
+                      { label: "Sun 18:15", time: "2026-07-26T18:15:00", desc: "6 Started" },
+                      { label: "Sun 20:15", time: "2026-07-26T20:15:00", desc: "8 Started" },
+                      { label: "Sun 21:30", time: "2026-07-26T21:30:00", desc: "15 Started" },
+                      { label: "Sun 23:30", time: "2026-07-26T23:30:00", desc: "All 17 Started" }
                     ].map((pt) => {
                       const isActive = simulatedTime.getTime() === new Date(pt.time).getTime();
                       return (
