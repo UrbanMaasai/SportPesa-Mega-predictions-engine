@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account settings and general metadata",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user authentication identifier"
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified email address"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        },
+        "lastActiveAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last system interaction"
+        }
+      },
+      "required": [
+        "uid",
+        "email"
+      ]
+    },
+    "SavedCoupon": {
+      "title": "SavedCoupon",
+      "description": "A saved jackpot coupon slip configuration stored for performance tracking",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique coupon configuration identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference identifier of the owner user profile"
+        },
+        "name": {
+          "type": "string",
+          "description": "Custom name given to this slip"
+        },
+        "selections": {
+          "type": "object",
+          "description": "JSON representation of match-level choices mapping match_no to outcomes arrays"
+        },
+        "subJackpotSize": {
+          "type": "number",
+          "description": "Filter selection size mapping either 17, 15, 14, 13, or 12 active games"
+        },
+        "strategy": {
+          "type": "string",
+          "description": "The custom strategy used to populate this slip"
+        },
+        "cost": {
+          "type": "number",
+          "description": "The computed cost of total accumulator line combinations"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this coupon was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this coupon was last modified"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "selections",
+        "subJackpotSize",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Information about registered users of the SportPesa AI model"
+    },
+    "/users/{userId}/coupons/{couponId}": {
+      "schema": "SavedCoupon",
+      "description": "Saved jackpot coupons submitted by users for historical monitoring and week-on-week accuracy comparisons"
+    }
+  }
+}

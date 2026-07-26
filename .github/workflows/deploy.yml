@@ -1,0 +1,64 @@
+# GitHub Actions Workflow for automated Deployment to Vercel
+# Whenever changes are pushed to the 'main' branch, this workflow will build and deploy the app.
+# 
+# Pre-requisites (Configure in your GitHub Repository settings -> Secrets and variables -> Actions):
+# - VERCEL_TOKEN: Generate a token at https://vercel.com/account/tokens
+# - VERCEL_ORG_ID: Found in your Vercel project Settings or Team settings (or run `vercel login` / `vercel link`)
+# - VERCEL_PROJECT_ID: Found in your Vercel project Settings
+
+name: Automated Cloud Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the source code from GitHub
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install Node.js setup with cache optimization
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Step 3: Install all required base dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # Step 4: Perform type-checking and linter checks to ensure build safety
+      - name: Run Linter & Safety Validation
+        run: npm run lint
+
+      # Step 5: Pull Vercel environment details for Production deployment
+      - name: Pull Vercel Environment Info
+        if: github.ref == 'refs/heads/main'
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Step 6: Build the application assets in Vercel Context
+      - name: Build Project Artifacts
+        if: github.ref == 'refs/heads/main'
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Step 7: Push the compiled build to Production on Vercel
+      - name: Deploy to Vercel (Production)
+        if: github.ref == 'refs/heads/main'
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
