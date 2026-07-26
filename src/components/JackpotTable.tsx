@@ -5,10 +5,11 @@
 
 import React from "react";
 import { Match } from "../types";
-import { Sparkles, BrainCircuit, BarChart3, HelpCircle, ArrowRight, LineChart } from "lucide-react";
+import { Sparkles, BrainCircuit, BarChart3, HelpCircle, ArrowRight, LineChart, LayoutList, LayoutGrid, ChevronDown, UserCheck, MapPin, Tv, CloudSun } from "lucide-react";
 import { get24hDrop } from "./D3LineChart";
 import TeamNameH2HCard from "./TeamNameH2HCard";
 import FormSparkline from "./FormSparkline";
+import { getMatchExtraDetails } from "../utils/matchDetails";
 
 interface JackpotTableProps {
   matches: Match[];
@@ -27,6 +28,16 @@ export default function JackpotTable({
   activeAnalysisMatchNo,
   onOpenOddsTracker,
 }: JackpotTableProps) {
+  const [viewMode, setViewMode] = React.useState<"compact" | "detailed">("detailed");
+  const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
+
+  const toggleRowExpansion = (matchNo: string) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [matchNo]: !prev[matchNo],
+    }));
+  };
+
   const getOutcomeClass = (matchNo: string, outcome: string, isSharp: boolean) => {
     const isSelected = selections[matchNo]?.includes(outcome);
     if (isSelected) {
@@ -83,21 +94,52 @@ export default function JackpotTable({
           </div>
         </div>
 
-        {/* Sharp Money Legend and Info */}
-        <div className="flex items-center gap-2.5 bg-amber-50/70 border border-amber-200/60 px-3 py-1.5 rounded-lg text-left self-start sm:self-center shrink-0">
-          <div className="flex h-2 w-2 relative shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+        {/* Layout View Toggle & Sharp Money Legend */}
+        <div className="flex flex-wrap items-center gap-3 self-start sm:self-center shrink-0">
+          <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg border border-slate-300/60 font-sans">
+            <button
+              onClick={() => setViewMode("compact")}
+              id="jackpot-grid-compact-btn"
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                viewMode === "compact"
+                  ? "bg-white text-indigo-700 shadow-2xs font-extrabold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Switch to Compact List View"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Compact List</span>
+            </button>
+            <button
+              onClick={() => setViewMode("detailed")}
+              id="jackpot-grid-detailed-btn"
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                viewMode === "detailed"
+                  ? "bg-white text-indigo-700 shadow-2xs font-extrabold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Switch to Detailed Grid View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Detailed Grid</span>
+            </button>
           </div>
-          <div className="text-xs">
-            <span className="font-extrabold text-amber-800 text-[9px] uppercase block tracking-wider">Sharp Market Alert</span>
-            <span className="text-[10px] text-amber-700 font-medium">Outcomes with &gt;10% odds drop in last 24h.</span>
+
+          <div className="flex items-center gap-2.5 bg-amber-50/70 border border-amber-200/60 px-3 py-1.5 rounded-lg text-left">
+            <div className="flex h-2 w-2 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </div>
+            <div className="text-xs">
+              <span className="font-extrabold text-amber-800 text-[9px] uppercase block tracking-wider">Sharp Market Alert</span>
+              <span className="text-[10px] text-amber-700 font-medium">Outcomes with &gt;10% odds drop in last 24h.</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className={`w-full text-left border-collapse sports-grid ${viewMode}`}>
           <thead>
             <tr className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
               <th className="py-3 px-4 w-12 text-center">No.</th>
@@ -111,6 +153,8 @@ export default function JackpotTable({
             {matches.map((match) => {
               const isAnalyzing = activeAnalysisMatchNo === match.match_no;
               const hasSelections = selections[match.match_no]?.length > 0;
+              const isExpanded = !!expandedRows[match.match_no];
+              const details = getMatchExtraDetails(match);
 
               // Check 24-hour historical odds drop for visual highlighting
               const d1 = get24hDrop(match.id, "1");
@@ -118,18 +162,34 @@ export default function JackpotTable({
               const d2 = get24hDrop(match.id, "2");
 
               return (
-                <tr
-                  key={match.id}
-                  className={`hover:bg-slate-50/50 transition-colors duration-150 ${
-                    isAnalyzing ? "bg-emerald-50/30" : ""
-                  }`}
-                >
-                  {/* Match Number */}
-                  <td className="py-5 px-4 text-center">
-                    <span className="inline-flex w-7 h-7 bg-slate-100 text-slate-700 rounded-full items-center justify-center font-mono text-xs font-bold border border-slate-200">
-                      {match.match_no}
-                    </span>
-                  </td>
+                <React.Fragment key={match.id}>
+                  <tr
+                    onClick={() => toggleRowExpansion(match.match_no)}
+                    className={`hover:bg-slate-50/70 transition-all duration-150 cursor-pointer ${
+                      hasSelections ? "has-selections bg-amber-50/40 border-l-4 border-l-amber-500 shadow-xs" : ""
+                    } ${
+                      isAnalyzing ? "bg-emerald-50/30" : ""
+                    } ${isExpanded ? "bg-indigo-50/20" : ""}`}
+                  >
+                    {/* Match Number & Expand Toggle */}
+                    <td className="py-5 px-4 text-center">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className="inline-flex w-7 h-7 bg-slate-100 text-slate-700 rounded-full items-center justify-center font-mono text-xs font-bold border border-slate-200">
+                          {match.match_no}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleRowExpansion(match.match_no);
+                          }}
+                          className="p-0.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-all cursor-pointer"
+                          title={isExpanded ? "Collapse Match Info" : "Expand Match Details (Referee, Venue, Broadcast)"}
+                        >
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? "rotate-180 text-indigo-600 font-bold" : ""}`} />
+                        </button>
+                      </div>
+                    </td>
 
                   {/* Kickoff / League */}
                   <td className="py-5 px-4">
@@ -240,7 +300,7 @@ export default function JackpotTable({
                   </td>
 
                   {/* Prediction Outcomes Buttons */}
-                  <td className="py-5 px-4 text-center">
+                  <td className="py-5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="inline-grid grid-cols-3 gap-2.5 w-full max-w-xs justify-center mx-auto">
                       {/* Home Win (1) */}
                       <button
@@ -362,7 +422,7 @@ export default function JackpotTable({
                   </td>
 
                   {/* AI Analysis trigger & Odds Tracker */}
-                  <td className="py-5 px-4 text-center">
+                  <td className="py-5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1.5">
                       <button
                         onClick={() => onAnalyzeMatch(match)}
@@ -391,8 +451,100 @@ export default function JackpotTable({
                     </div>
                   </td>
                 </tr>
-              );
-            })}
+
+                {/* Expanded Match Details Sub-Row */}
+                {isExpanded && (
+                  <tr className="bg-slate-50/90 border-b border-indigo-100/80 animate-fade-in">
+                    <td colSpan={5} className="p-4 sm:p-5">
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col gap-3.5 text-left">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 font-mono">
+                              MATCH #{match.match_no} METADATA & INTEL
+                            </span>
+                            <span className="text-xs font-extrabold text-slate-800">
+                              {match.home} vs {match.away}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono font-medium">
+                            {match.league || "Fixture"} &bull; {match.kickoff}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                          {/* Referee Info */}
+                          <div className="bg-slate-50/90 p-3 rounded-lg border border-slate-200/80 flex items-start gap-2.5">
+                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 shrink-0">
+                              <UserCheck className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Match Official</span>
+                              <span className="font-bold text-slate-900 block">{details.referee}</span>
+                              <span className="text-[10px] text-slate-500 block">{details.refereeRole}</span>
+                              <span className="text-[10px] font-mono font-semibold text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded mt-1.5 inline-block">
+                                Avg: {details.refereeCardsAvg}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Stadium Info */}
+                          <div className="bg-slate-50/90 p-3 rounded-lg border border-slate-200/80 flex items-start gap-2.5">
+                            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 shrink-0">
+                              <MapPin className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Stadium & Venue</span>
+                              <span className="font-bold text-slate-900 block">{details.stadium}</span>
+                              <span className="text-[10px] text-slate-500 block">{details.city} &bull; Cap: {details.capacity}</span>
+                              <span className="text-[10px] font-mono font-medium text-emerald-700 block mt-1.5">
+                                Surface: {details.pitchType}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Broadcast Channels */}
+                          <div className="bg-slate-50/90 p-3 rounded-lg border border-slate-200/80 flex items-start gap-2.5">
+                            <div className="p-2 bg-rose-50 rounded-lg text-rose-600 shrink-0">
+                              <Tv className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Broadcast & Media</span>
+                              <span className="font-bold text-slate-900 block">{details.broadcast}</span>
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {details.broadcastChannels.map((ch, idx) => (
+                                  <span key={idx} className="text-[9px] bg-slate-200/70 text-slate-700 px-1.5 py-0.5 rounded font-mono font-semibold">
+                                    {ch}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Weather & Conditions */}
+                          <div className="bg-slate-50/90 p-3 rounded-lg border border-slate-200/80 flex items-start gap-2.5">
+                            <div className="p-2 bg-amber-50 rounded-lg text-amber-600 shrink-0">
+                              <CloudSun className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Weather Forecast</span>
+                              <span className="font-bold text-slate-900 block">{details.weather}</span>
+                              <span className="text-[10px] text-slate-500 block mt-0.5">{details.temperature}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* H2H & Tactical Note */}
+                        <div className="bg-indigo-50/60 border border-indigo-100/80 p-2.5 rounded-lg flex items-center gap-2 text-xs text-indigo-950 font-medium">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span><strong>Key Match Insight:</strong> {details.keyH2HNote}</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
           </tbody>
         </table>
       </div>

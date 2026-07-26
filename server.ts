@@ -89,7 +89,7 @@ async function callGeminiSafe(
 // 1. Get the current jackpot matches
 app.get("/api/matches", (req, res) => {
   res.json({
-    jackpot_id: "MJP_20260530",
+    jackpot_id: "MJP_20260725",
     matches: activeMatches,
   });
 });

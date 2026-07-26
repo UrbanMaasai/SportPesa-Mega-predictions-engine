@@ -130,7 +130,7 @@ export default function Header({ onSync, isSyncing, matchCount, onOpenScreenshot
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Current Grand Pool
           </div>
           <div className="text-xl md:text-2xl font-black text-amber-400 font-mono">
-            Ksh 354,231,590
+            Ksh 365,410,000
           </div>
           <div className="text-[10px] text-slate-400">Guaranteed Progressive Payout</div>
         </div>

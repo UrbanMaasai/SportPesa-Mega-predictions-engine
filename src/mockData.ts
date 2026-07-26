@@ -9,7 +9,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 1,
     match_no: "1",
-    kickoff: "Today 30/05/26 - 19:00",
+    kickoff: "Today 25/07/26 - 19:00",
     home: "Paris Saint-Germain",
     away: "Arsenal FC",
     league: "International Club Friendly",
@@ -24,7 +24,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 2,
     match_no: "2",
-    kickoff: "Today 30/05/26 - 21:00",
+    kickoff: "Today 25/07/26 - 21:00",
     home: "CA Estudiantes",
     away: "CD Godoy Cruz",
     league: "Argentina Primera Division",
@@ -39,7 +39,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 3,
     match_no: "3",
-    kickoff: "Today 30/05/26 - 22:00",
+    kickoff: "Today 25/07/26 - 22:00",
     home: "Granada CF",
     away: "Sporting Gijon",
     league: "Spain Segunda Division",
@@ -54,7 +54,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 4,
     match_no: "4",
-    kickoff: "Today 30/05/26 - 23:30",
+    kickoff: "Today 25/07/26 - 23:30",
     home: "Gremio FB Porto Alegre RS",
     away: "SC Corinthians SP",
     league: "Brazil Serie A",
@@ -69,7 +69,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 5,
     match_no: "5",
-    kickoff: "Tomorrow 31/05/26 - 15:00",
+    kickoff: "Tomorrow 26/07/26 - 15:00",
     home: "Degerfors IF",
     away: "IF Brommapojkarna",
     league: "Sweden Allsvenskan",
@@ -84,7 +84,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 6,
     match_no: "6",
-    kickoff: "Tomorrow 31/05/26 - 15:00",
+    kickoff: "Tomorrow 26/07/26 - 15:00",
     home: "Vasteraas SK",
     away: "IFK Goteborg",
     league: "Sweden Allsvenskan",
@@ -99,7 +99,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 7,
     match_no: "7",
-    kickoff: "Tomorrow 31/05/26 - 16:00",
+    kickoff: "Tomorrow 26/07/26 - 16:00",
     home: "Hillerod Fodbold",
     away: "Hvidovre IF",
     league: "Denmark Division 1",
@@ -114,7 +114,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 8,
     match_no: "8",
-    kickoff: "Tomorrow 31/05/26 - 16:00",
+    kickoff: "Tomorrow 26/07/26 - 16:00",
     home: "Albion FC",
     away: "Montevideo City Torque",
     league: "Uruguay Segunda Division",
@@ -129,7 +129,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 9,
     match_no: "9",
-    kickoff: "Tomorrow 31/05/26 - 17:00",
+    kickoff: "Tomorrow 26/07/26 - 17:00",
     home: "Sao Bernardo FC",
     away: "Gremio Novorizontino SP",
     league: "Brazil Serie B",
@@ -144,7 +144,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 10,
     match_no: "10",
-    kickoff: "Tomorrow 31/05/26 - 17:00",
+    kickoff: "Tomorrow 26/07/26 - 17:00",
     home: "Londrina EC PR",
     away: "Vila Nova FC GO",
     league: "Brazil Serie B",
@@ -159,7 +159,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 11,
     match_no: "11",
-    kickoff: "Tomorrow 31/05/26 - 18:00",
+    kickoff: "Tomorrow 26/07/26 - 18:00",
     home: "Cape Verde",
     away: "Serbia",
     league: "International Friendly",
@@ -174,7 +174,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 12,
     match_no: "12",
-    kickoff: "Tomorrow 31/05/26 - 18:30",
+    kickoff: "Tomorrow 26/07/26 - 18:30",
     home: "Mikkelin Palloilijat",
     away: "Ekenas Idrottsforening",
     league: "Finland Ykkones",
@@ -189,7 +189,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 13,
     match_no: "13",
-    kickoff: "Tomorrow 31/05/26 - 19:30",
+    kickoff: "Tomorrow 26/07/26 - 19:30",
     home: "Deportes Limache",
     away: "Coquimbo Unido",
     league: "Chile Primera Division",
@@ -204,7 +204,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 14,
     match_no: "14",
-    kickoff: "Tomorrow 31/05/26 - 19:30",
+    kickoff: "Tomorrow 26/07/26 - 19:30",
     home: "RC Deportivo De La Coruna",
     away: "UD Las Palmas",
     league: "Spain Segunda Division",
@@ -219,7 +219,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 15,
     match_no: "15",
-    kickoff: "Tomorrow 31/05/26 - 21:00",
+    kickoff: "Tomorrow 26/07/26 - 21:00",
     home: "Sporting Jax",
     away: "Brooklyn FC",
     league: "USL Championship",
@@ -234,7 +234,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 16,
     match_no: "16",
-    kickoff: "Tomorrow 31/05/26 - 22:00",
+    kickoff: "Tomorrow 26/07/26 - 22:00",
     home: "Mitre Santiago del Estero",
     away: "Deportivo Moron",
     league: "Argentina Primera Nacional",
@@ -249,7 +249,7 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
   {
     id: 17,
     match_no: "17",
-    kickoff: "Tomorrow 31/05/26 - 22:30",
+    kickoff: "Tomorrow 26/07/26 - 22:30",
     home: "USA",
     away: "Senegal",
     league: "International Friendly",
@@ -264,9 +264,14 @@ export const MOCK_JACKPOT_MATCHES: Match[] = [
 ];
 
 export const MOCK_PAYOUT_HISTORY = [
+  { jackpot_id: "MJP_20260719", date: "July 19, 2026", jackpot_amount: "Ksh 362,840,210", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,890,400", bonus_15: "Ksh 380,100", bonus_14: "Ksh 48,200", bonus_13: "Ksh 6,100", bonus_12: "Ksh 1,280" },
+  { jackpot_id: "MJP_20260712", date: "July 12, 2026", jackpot_amount: "Ksh 359,710,200", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,650,110", bonus_15: "Ksh 345,000", bonus_14: "Ksh 44,100", bonus_13: "Ksh 5,800", bonus_12: "Ksh 1,190" },
+  { jackpot_id: "MJP_20260705", date: "July 05, 2026", jackpot_amount: "Ksh 356,120,500", combinations: 17, winner_count: 1, bonus_16: "Ksh 1,840,000", bonus_15: "Ksh 210,000", bonus_14: "Ksh 28,500", bonus_13: "Ksh 3,400", bonus_12: "Ksh 890" },
+  { jackpot_id: "MJP_20260628", date: "June 28, 2026", jackpot_amount: "Ksh 353,900,000", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,510,300", bonus_15: "Ksh 320,000", bonus_14: "Ksh 41,000", bonus_13: "Ksh 5,300", bonus_12: "Ksh 1,100" },
+  { jackpot_id: "MJP_20260621", date: "June 21, 2026", jackpot_amount: "Ksh 350,540,110", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,210,400", bonus_15: "Ksh 298,000", bonus_14: "Ksh 39,200", bonus_13: "Ksh 4,900", bonus_12: "Ksh 1,020" },
+  { jackpot_id: "MJP_20260614", date: "June 14, 2026", jackpot_amount: "Ksh 348,210,000", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,110,000", bonus_15: "Ksh 275,000", bonus_14: "Ksh 36,500", bonus_13: "Ksh 4,500", bonus_12: "Ksh 980" },
+  { jackpot_id: "MJP_20260607", date: "June 07, 2026", jackpot_amount: "Ksh 345,600,000", combinations: 17, winner_count: 1, bonus_16: "Ksh 1,450,000", bonus_15: "Ksh 180,000", bonus_14: "Ksh 22,000", bonus_13: "Ksh 2,900", bonus_12: "Ksh 750" },
+  { jackpot_id: "MJP_20260531", date: "May 31, 2026", jackpot_amount: "Ksh 343,800,000", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,300,000", bonus_15: "Ksh 305,000", bonus_14: "Ksh 39,000", bonus_13: "Ksh 5,100", bonus_12: "Ksh 1,050" },
   { jackpot_id: "MJP_20260524", date: "May 24, 2026", jackpot_amount: "Ksh 354,231,590", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,451,190", bonus_15: "Ksh 312,400", bonus_14: "Ksh 41,500", bonus_13: "Ksh 5,200", bonus_12: "Ksh 1,150" },
-  { jackpot_id: "MJP_20260517", date: "May 17, 2026", jackpot_amount: "Ksh 351,209,102", combinations: 17, winner_count: 0, bonus_16: "Ksh 1,980,110", bonus_15: "Ksh 205,000", bonus_14: "Ksh 29,100", bonus_13: "Ksh 3,900", bonus_12: "Ksh 950" },
-  { jackpot_id: "MJP_20260510", date: "May 10, 2026", jackpot_amount: "Ksh 348,155,701", combinations: 17, winner_count: 1, bonus_16: "Ksh 1,120,400", bonus_15: "Ksh 98,200", bonus_14: "Ksh 12,400", bonus_13: "Ksh 1,800", bonus_12: "Ksh 460" },
-  { jackpot_id: "MJP_20260503", date: "May 03, 2026", jackpot_amount: "Ksh 344,980,011", combinations: 17, winner_count: 0, bonus_16: "Ksh 3,110,400", bonus_15: "Ksh 412,000", bonus_14: "Ksh 56,200", bonus_13: "Ksh 7,100", bonus_12: "Ksh 1,800" },
-  { jackpot_id: "MJP_20260426", date: "Apr 26, 2026", jackpot_amount: "Ksh 341,450,210", combinations: 17, winner_count: 0, bonus_16: "Ksh 2,340,110", bonus_15: "Ksh 198,000", bonus_14: "Ksh 34,000", bonus_13: "Ksh 4,400", bonus_12: "Ksh 910" }
+  { jackpot_id: "MJP_20260517", date: "May 17, 2026", jackpot_amount: "Ksh 351,209,102", combinations: 17, winner_count: 0, bonus_16: "Ksh 1,980,110", bonus_15: "Ksh 205,000", bonus_14: "Ksh 29,100", bonus_13: "Ksh 3,900", bonus_12: "Ksh 950" }
 ];
