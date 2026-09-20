@@ -901,7 +901,7 @@ Format rules: Send only valid JSON in response matching:
   const selections: Record<string, string[]> = {};
   
   // Distribute selections based on strategy
-  activeMatches.forEach((m, idx) => {
+  activeMatches.forEach((m) => {
     const odds1 = m.odds["1"];
     const oddsX = m.odds["X"];
     const odds2 = m.odds["2"];

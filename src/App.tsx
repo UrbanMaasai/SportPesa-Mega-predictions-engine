@@ -37,13 +37,9 @@ import {
 import {
   doc,
   setDoc,
-  getDoc,
   getDocs,
   collection,
-  query,
-  where,
   deleteDoc,
-  onSnapshot,
 } from "firebase/firestore";
 import {
   Trophy,
@@ -63,7 +59,6 @@ import {
   AlertTriangle,
   Send,
   Info,
-  ExternalLink,
   ChevronRight,
   ChevronLeft,
   TrendingUp,
@@ -82,7 +77,6 @@ import {
   Minus,
   Zap,
   Smartphone,
-  MessageSquare,
   BarChart3,
   RotateCcw,
   ArrowUpDown,
@@ -95,7 +89,6 @@ import {
   Sun,
   Moon,
   Activity,
-  Save,
   CloudUpload,
   LayoutList,
   LayoutGrid,
@@ -125,7 +118,6 @@ export default function App() {
 
   // Active Jackpot source & autosaved screenshot jackpot state
   const [jackpotSource, setJackpotSource] = useState<string>("Live SportPesa Portal");
-  const [lastScrapedScreenshotTime, setLastScrapedScreenshotTime] = useState<string | null>(null);
 
   // Analysis panel state (select match #1 by default)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -313,13 +305,11 @@ export default function App() {
     setActiveSubJackpotMatches(newActiveMap);
     setSubJackpotSize(scrapedMatches.length > 0 ? scrapedMatches.length : 17);
 
-    const timestampStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    setLastScrapedScreenshotTime(timestampStr);
-
     addLog(`[Screenshot OCR] ${msg}`);
 
     // Autosave scraped games from uploaded screenshot as most current Jackpot
     try {
+      const timestampStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const payload = {
         matches: scrapedMatches,
         timestamp: new Date().toISOString(),
@@ -930,7 +920,6 @@ export default function App() {
           if (!isObsolete) {
             setMatches(parsedScreenshot.matches);
             setJackpotSource("Screenshot OCR (Autosaved)");
-            if (parsedScreenshot.timeStr) setLastScrapedScreenshotTime(parsedScreenshot.timeStr);
             addLog("[Autosave] Loaded autosaved screenshot jackpot dataset (17 games).");
           } else {
             localStorage.removeItem("mjp_autosaved_screenshot_jackpot");
@@ -1605,7 +1594,8 @@ export default function App() {
   };
 
   // Perform quick pick selection based on current strategy and doubleChanceCount
-  const handleQuickPick = (countOverride?: number) => {
+  const handleQuickPick = (e?: React.MouseEvent<HTMLButtonElement>, countOverride?: number) => {
+    if (e) e.preventDefault();
     const currentCount = typeof countOverride === "number" ? countOverride : doubleChanceCount;
     if (typeof countOverride === "number") {
       setDoubleChanceCount(countOverride);
@@ -4613,8 +4603,8 @@ export default function App() {
                             <button
                               key={preset.doubles}
                               type="button"
-                              onClick={() => {
-                                handleQuickPick(preset.doubles);
+                              onClick={(e) => {
+                                handleQuickPick(e, preset.doubles);
                                 addLog(`[Presets] Automatically loaded ${preset.doubles} Double-Chances utilizing ${activeStrategy || "AI-BALANCED"} matching model.`);
                               }}
                               className={`p-1.5 rounded-lg border flex flex-col items-center justify-center transition-all duration-150 cursor-pointer ${
