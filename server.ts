@@ -87,7 +87,7 @@ async function callGeminiSafe(
 /* --- API ENDPOINTS --- */
 
 // 1. Get the current jackpot matches
-app.get("/api/matches", (req, res) => {
+app.get("/api/matches", (_req, res) => {
   res.json({
     jackpot_id: "MJP_20260725",
     matches: activeMatches,
@@ -95,7 +95,7 @@ app.get("/api/matches", (req, res) => {
 });
 
 // 2. Scraper endpoint to scrape/refresh current SportPesa Mega Jackpot
-app.post("/api/matches/scrape", async (req, res) => {
+app.post("/api/matches/scrape", async (_req, res) => {
   console.log("Scrape/Refresh request received for SportPesa Mega Jackpot portal...");
 
   let rawPageHtml = "";
@@ -268,7 +268,7 @@ Provide 17 matches (match_no "1" through "17") with kickoff times, home team, aw
     };
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: "Successfully synchronized Mega Jackpot with live SportPesa portal",
     matches: activeMatches,
@@ -336,8 +336,8 @@ function parseTextLocally(rawText: string) {
 }
 
 // 2b. Parse raw pasted text from SportPesa website
-app.post("/api/matches/parse-text", async (req, res) => {
-  const { rawText } = req.body;
+app.post("/api/matches/parse-text", async (_req, res) => {
+  const { rawText } = _req.body;
   if (!rawText || typeof rawText !== "string") {
     return res.status(400).json({ error: "rawText string is required" });
   }
@@ -435,7 +435,7 @@ Return strict valid JSON with key 'matches' containing array of 17 match objects
   // Fallback local text parser when Gemini is unavailable or rate limited
   console.log("Using local text extractor fallback for pasted coupon...");
   activeMatches = parseTextLocally(rawText);
-  res.json({
+  return res.json({
     success: true,
     extractedCount: 17,
     message: "Successfully extracted 17 jackpot fixtures from pasted text!",
@@ -444,8 +444,8 @@ Return strict valid JSON with key 'matches' containing array of 17 match objects
 });
 
 // 3. User uploading or paste custom match outcomes or jackpot config
-app.post("/api/matches/custom", (req, res) => {
-  const { matches } = req.body;
+app.post("/api/matches/custom", (_req, res) => {
+  const { matches } = _req.body;
   if (Array.isArray(matches) && matches.length === 17) {
     activeMatches = matches.map((m, i) => ({
       id: i + 1,
@@ -466,8 +466,8 @@ app.post("/api/matches/custom", (req, res) => {
 });
 
 // 3b. Screenshot OCR Scraper endpoint using Gemini Multimodal Vision API
-app.post("/api/matches/ocr-scrape", async (req, res) => {
-  const { imageBase64, mimeType = "image/png" } = req.body;
+app.post("/api/matches/ocr-scrape", async (_req, res) => {
+  const { imageBase64, mimeType = "image/png" } = _req.body;
 
   if (!imageBase64) {
     return res.status(400).json({ error: "Image data string is required for jackpot OCR scraping" });
@@ -602,7 +602,7 @@ Output strict valid JSON.`;
   });
 
   activeMatches = updatedMatches;
-  res.json({
+  return res.json({
     success: true,
     extractedCount: 17,
     message: "Processed screenshot and updated 17 Mega Jackpot match fixtures!",
@@ -674,8 +674,8 @@ function getDeterministicFallbackAnalysis(match: any, engine: "deepseek" | "grok
 }
 
 // 4. API to analyze a specific match
-app.post("/api/analyze-match", async (req, res) => {
-  const { match, requestedFallback } = req.body;
+app.post("/api/analyze-match", async (_req, res) => {
+  const { match, requestedFallback } = _req.body;
   if (!match) {
     return res.status(400).json({ error: "Match configuration is required" });
   }
@@ -824,12 +824,12 @@ Your analysis needs to evaluate both team forms, tactical strengths, defensive v
   console.log(`Gemini rate-limited or unavailable. Automatically routed fallback intelligence via ${autoProvider} engine.`);
   
   const autoSim = getDeterministicFallbackAnalysis(match, autoProvider);
-  res.json(autoSim);
+  return res.json(autoSim);
 });
 
 // 5. API to generate a complete 17-match predicted slip based on a strategy
-app.post("/api/generate-slip", async (req, res) => {
-  const { strategy } = req.body; // 'conservative' | 'ai-balanced' | 'bold'
+app.post("/api/generate-slip", async (_req, res) => {
+  const { strategy } = _req.body; // 'conservative' | 'ai-balanced' | 'bold'
   
   if (ai) {
     const matchDetails = activeMatches.map(m => ({
@@ -960,7 +960,7 @@ Format rules: Send only valid JSON in response matching:
     ? "Targeting dynamic high-value draws and unpredicted away gains where underdogs hold substantial tactical form leverage over vulnerable favorites."
     : "This coupon distributes home dominance, mid-tier draws, and realistic away wins in a balanced system designed for optimal coverage of typical jackpot distributions.";
 
-  res.json({
+  return res.json({
     selections,
     justification,
     isMocked: true,
@@ -969,7 +969,7 @@ Format rules: Send only valid JSON in response matching:
 });
 
 // 6. API to fetch historical jackpot payout data and AI Balanced performance metrics
-app.get("/api/historical-payouts", (req, res) => {
+app.get("/api/historical-payouts", (_req, res) => {
   const historicalData = [
     {
       id: "MJP-WK-20",
@@ -1084,7 +1084,7 @@ async function startServer() {
     // Serve static files from compiled dist folder in production
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
