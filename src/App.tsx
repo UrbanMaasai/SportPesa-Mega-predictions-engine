@@ -2066,7 +2066,7 @@ export default function App() {
   };
 
   // Extract all distinct leagues from matches array to create dynamic filter dropdown
-  const uniqueLeagues = ["All", ...Array.from(new Set(matches.map((m) => m.league).filter(Boolean)))];
+  const uniqueLeagues = ["All", ...Array.from(new Set(matches.map((m) => m.league).filter(Boolean))) as string[]];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-800">
