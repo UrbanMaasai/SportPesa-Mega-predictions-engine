@@ -13,8 +13,9 @@ describe('getMatchExtraDetails', () => {
     home: 'Arsenal',
     away: 'Chelsea',
     league: 'Premier League',
-    time: '15:00',
-    id: 1
+    kickoff: '15:00',
+    id: 1,
+    odds: { "1": 2.0, "X": 3.0, "2": 4.0 }
   };
 
   it('should return match extra details object with all required fields', () => {

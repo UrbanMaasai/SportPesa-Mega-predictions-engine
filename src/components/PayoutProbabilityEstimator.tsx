@@ -1,17 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Coins, HelpCircle, Award, Percent, TrendingUp, Info, ShieldCheck, Check, ChevronDown, ChevronUp } from "lucide-react";
-
-interface Match {
-  id: string;
-  match_no: string;
-  home: string;
-  away: string;
-  predictionStats?: {
-    "1": number;
-    "X": number;
-    "2": number;
-  };
-}
+import { Match } from "../types";
 
 interface PayoutProbabilityEstimatorProps {
   matches: Match[];
