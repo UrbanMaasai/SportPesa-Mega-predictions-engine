@@ -1,4 +1,33 @@
 ```
-# Hooks directory
-src/hooks/
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
 ```
